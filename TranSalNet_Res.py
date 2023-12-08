@@ -1,49 +1,48 @@
-import os
+# import os
 import torch
-import numpy as np
-import pandas as pd
-from torch.utils.data import Dataset, DataLoader
-from skimage import io, transform
+
+# import numpy as np
+# import pandas as pd
+# from torch.utils.data import Dataset, DataLoader
+# from skimage import io, transform
 from PIL import Image
 import torch.nn as nn
-from torchvision import transforms, utils, models
+# from torchvision import transforms, utils, models
 import torch.nn.functional as F
 import utils.resnet as resnet
 
 from utils.TransformerEncoder import Encoder
 
 
-
 cfg1 = {
-"hidden_size" : 768,
-"mlp_dim" : 768*4,
-"num_heads" : 12,
-"num_layers" : 2,
-"attention_dropout_rate" : 0,
-"dropout_rate" : 0.0,
+    "hidden_size": 768,
+    "mlp_dim": 768 * 4,
+    "num_heads": 12,
+    "num_layers": 2,
+    "attention_dropout_rate": 0,
+    "dropout_rate": 0.0,
 }
 
 cfg2 = {
-"hidden_size" : 768,
-"mlp_dim" : 768*4,
-"num_heads" : 12,
-"num_layers" : 2,
-"attention_dropout_rate" : 0,
-"dropout_rate" : 0.0,
+    "hidden_size": 768,
+    "mlp_dim": 768 * 4,
+    "num_heads": 12,
+    "num_layers": 2,
+    "attention_dropout_rate": 0,
+    "dropout_rate": 0.0,
 }
 
 cfg3 = {
-"hidden_size" : 512,
-"mlp_dim" : 512*4,
-"num_heads" : 8,
-"num_layers" : 2,
-"attention_dropout_rate" : 0,
-"dropout_rate" : 0.0,
+    "hidden_size": 512,
+    "mlp_dim": 512 * 4,
+    "num_heads": 8,
+    "num_layers": 2,
+    "attention_dropout_rate": 0,
+    "dropout_rate": 0.0,
 }
 
 
 class TranSalNet(nn.Module):
-
     def __init__(self):
         super(TranSalNet, self).__init__()
         self.encoder = _Encoder()
@@ -64,39 +63,68 @@ class _Encoder(nn.Module):
 
     def forward(self, x):
         outputs = []
-        for ii,layer in enumerate(self.encoder):
+        for ii, layer in enumerate(self.encoder):
             x = layer(x)
-            if ii in {5,6,7}:
+            if ii in {5, 6, 7}:
                 outputs.append(x)
         return outputs
 
 
 class _Decoder(nn.Module):
-
     def __init__(self):
         super(_Decoder, self).__init__()
-        self.conv1 = nn.Conv2d(768, 768, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
-        self.conv2 = nn.Conv2d(768, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
-        self.conv3 = nn.Conv2d(512, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
-        self.conv4 = nn.Conv2d(256, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
-        self.conv5 = nn.Conv2d(128, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
-        self.conv6 = nn.Conv2d(64, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+        self.conv1 = nn.Conv2d(
+            768, 768, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)
+        )
+        self.conv2 = nn.Conv2d(
+            768, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)
+        )
+        self.conv3 = nn.Conv2d(
+            512, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)
+        )
+        self.conv4 = nn.Conv2d(
+            256, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)
+        )
+        self.conv5 = nn.Conv2d(
+            128, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)
+        )
+        self.conv6 = nn.Conv2d(
+            64, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)
+        )
         self.conv7 = nn.Conv2d(32, 1, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
 
-        self.batchnorm1 = nn.BatchNorm2d(768, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-        self.batchnorm2 = nn.BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-        self.batchnorm3 = nn.BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-        self.batchnorm4 = nn.BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-        self.batchnorm5 = nn.BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-        self.batchnorm6 = nn.BatchNorm2d(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        self.batchnorm1 = nn.BatchNorm2d(
+            768, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True
+        )
+        self.batchnorm2 = nn.BatchNorm2d(
+            512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True
+        )
+        self.batchnorm3 = nn.BatchNorm2d(
+            256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True
+        )
+        self.batchnorm4 = nn.BatchNorm2d(
+            128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True
+        )
+        self.batchnorm5 = nn.BatchNorm2d(
+            64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True
+        )
+        self.batchnorm6 = nn.BatchNorm2d(
+            32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True
+        )
 
-        self.TransEncoder1 = TransEncoder(in_channels=2048, spatial_size=9*12, cfg=cfg1)
-        self.TransEncoder2 = TransEncoder(in_channels=1024, spatial_size=18*24, cfg=cfg2)
-        self.TransEncoder3 = TransEncoder(in_channels=512, spatial_size=36*48, cfg=cfg3)
+        self.TransEncoder1 = TransEncoder(
+            in_channels=2048, spatial_size=9 * 12, cfg=cfg1
+        )
+        self.TransEncoder2 = TransEncoder(
+            in_channels=1024, spatial_size=18 * 24, cfg=cfg2
+        )
+        self.TransEncoder3 = TransEncoder(
+            in_channels=512, spatial_size=36 * 48, cfg=cfg3
+        )
 
         self.add = torch.add
         self.relu = nn.ReLU(True)
-        self.upsample = nn.Upsample(scale_factor=2, mode='nearest')
+        self.upsample = nn.Upsample(scale_factor=2, mode="nearest")
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
@@ -143,15 +171,18 @@ class _Decoder(nn.Module):
 
 
 class TransEncoder(nn.Module):
-
     def __init__(self, in_channels, spatial_size, cfg):
         super(TransEncoder, self).__init__()
 
-        self.patch_embeddings = nn.Conv2d(in_channels=in_channels,
-                                          out_channels=cfg['hidden_size'],
-                                          kernel_size=1,
-                                          stride=1)
-        self.position_embeddings = nn.Parameter(torch.zeros(1, spatial_size, cfg['hidden_size']))
+        self.patch_embeddings = nn.Conv2d(
+            in_channels=in_channels,
+            out_channels=cfg["hidden_size"],
+            kernel_size=1,
+            stride=1,
+        )
+        self.position_embeddings = nn.Parameter(
+            torch.zeros(1, spatial_size, cfg["hidden_size"])
+        )
 
         self.transformer_encoder = Encoder(cfg)
 
@@ -168,4 +199,3 @@ class TransEncoder(nn.Module):
         x = x.contiguous().view(B, hidden, a, b)
 
         return x
-
